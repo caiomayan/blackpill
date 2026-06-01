@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum SystemRole {
+  USER
+  MODERATOR
+  ADMIN
+}
+
+enum InGameRole {
+  RIFLER
+  AWPER
+  ENTRY
+  SUPPORT
+  IGL
+  LURKER
+}
+
+enum TeamMemberRole {
+  OWNER
+  CAPTAIN
+  PLAYER
+  COACH
+  STAND_IN
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+}
+
+// ==========================================
+// MODELS
+// ==========================================
+
+model User {
+  id                  String       @id @default(uuid()) @db.Uuid
+  steamId64           String       @unique @db.VarChar(32)
+  steamPersonaName    String?      @db.VarChar(80)
+  steamAvatarUrl      String?
+  
+  // Custom Profile Data
+  username            String?      @db.VarChar(80)
+  email               String?      @unique @db.VarChar(254)
+  bio                 String?      @db.VarChar(500)
+  bannerUrl           String?
+  location            String?      @db.VarChar(100)
+  
+  // Social Links
+  xUrl                String?      @db.VarChar(200)
+  instagramUrl        String?      @db.VarChar(200)
+  hltvUrl             String?      @db.VarChar(200)
+  youtubeUrl          String?      @db.VarChar(200)
+  
+  // System & Game Roles
+  systemRole          SystemRole   @default(USER)
+  inGameRoles         InGameRole[] // Arrays suportados nativamente pelo Postgres
+
+  onboardingCompleted Boolean      @default(false)
+  hasAuthenticated    Boolean      @default(false)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  // Relationships
+  sessions            Session[]
+  teams               UserTeam[]
+  faceitProfile       FaceitProfile?
+  inventoryCache      InventoryCache?
+  
+  // Friendships
+  friendshipsInitiated Friendship[] @relation("UserFriendships")
+  friendshipsReceived  Friendship[] @relation("FriendFriendships")
+
+  // Invitations
+  teamInvitationsReceived TeamInvitation[] @relation("UserTeamInvitations")
+  teamInvitationsSent     TeamInvitation[] @relation("InviterTeamInvitations")
+}
+
+model FaceitProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @db.Uuid
+  faceitId    String   @unique
+  nickname    String   @db.VarChar(80)
+  level       Int      @db.SmallInt
+  elo         Int
+  avatarUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model InventoryCache {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @db.Uuid
+  items       Json     // PostgreSQL JSONB
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id         String   @id @default(uuid()) @db.Uuid
+  tokenHash  String   @unique
+  userId     String   @db.Uuid
+  expiresAt  DateTime
+  lastSeenAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Team {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @db.VarChar(50)
+  tag         String?    @db.VarChar(10)
+  description String?    @db.VarChar(1000)
+  avatarUrl   String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  
+  members     UserTeam[]
+  invitations TeamInvitation[]
+}
+
+model UserTeam {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @db.Uuid
+  teamId      String         @db.Uuid
+  
+  memberRole  TeamMemberRole @default(PLAYER)
+  inGameRole  InGameRole?    // Função exclusiva do jogador neste time
+  
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  team        Team           @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+  @@index([userId])
+  @@index([teamId])
+}
+
+model Friendship {
+  id          String           @id @default(uuid()) @db.Uuid
+  userId      String           @db.Uuid
+  friendId    String           @db.Uuid
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user        User             @relation("UserFriendships", fields: [userId], references: [id], onDelete: Cascade)
+  friend      User             @relation("FriendFriendships", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+  @@index([userId])
+  @@index([friendId])
+}
+
+model TeamInvitation {
+  id          String   @id @default(uuid()) @db.Uuid
+  teamId      String   @db.Uuid
+  userId      String   @db.Uuid
+  inviterId   String   @db.Uuid
+  createdAt   DateTime @default(now())
+
+  team        Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user        User     @relation("UserTeamInvitations", fields: [userId], references: [id], onDelete: Cascade)
+  inviter     User     @relation("InviterTeamInvitations", fields: [inviterId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId]) // A user can only have one pending invitation per team
+  @@index([userId])
+  @@index([teamId])
+}
