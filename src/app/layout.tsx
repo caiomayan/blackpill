@@ -4,6 +4,7 @@ import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { SearchDialog } from "@/components/search-command";
 import { getCurrentUserFromCookies } from "@/lib/session";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -45,6 +46,7 @@ export default async function RootLayout({
             />
           </div>
           {children}
+          <SearchDialog />
           <div className="absolute bottom-0 left-0 right-0 flex justify-center z-20">
             <Footer />
           </div>

@@ -140,7 +140,7 @@ export default async function TeamPage(props: {
                 <div className="flex items-center gap-1.5 mb-3">
                   <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-widest ${
                     member.memberRole === "OWNER" ? "bg-red-50 text-red-600" :
-                    member.memberRole === "ADMIN" ? "bg-blue-50 text-blue-600" :
+                    member.memberRole === "CAPTAIN" ? "bg-blue-50 text-blue-600" :
                     "bg-neutral-100 text-neutral-500"
                   }`}>
                     {member.memberRole}

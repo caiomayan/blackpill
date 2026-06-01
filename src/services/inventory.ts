@@ -58,13 +58,14 @@ export type InventoryItem = {
   hash?: string;
   teams: ("T" | "CT")[];
   isStatTrak: boolean;
+  seed?: number;
   mappedStickers: { name: string; imageUrl: string }[];
 };
 
 export async function getInventoryData(steamId64: string): Promise<InventoryItem[]> {
   try {
     const res = await fetch(`https://inventory.cstrike.app/api/equipped/v4/${steamId64}.json`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 3600, tags: [`inventory-${steamId64}`] },
     });
     if (!res.ok) return [];
     const data = await res.json();
@@ -159,5 +160,75 @@ export async function getInventoryData(steamId64: string): Promise<InventoryItem
     });
   } catch (error) {
     return [];
+  }
+}
+export async function getRealSteamInventory(steamId64: string) {
+  try {
+    const res = await fetch(`https://steamcommunity.com/inventory/${steamId64}/730/2?l=english&count=100`, {
+      next: { revalidate: 3600 },
+    });
+    if (!res.ok) {
+      return { items: [], error: res.status === 403 ? "private" : "rate_limit" };
+    }
+    const data = await res.json();
+    if (!data || !data.assets || !data.descriptions) {
+      return { items: [], error: "empty" };
+    }
+
+    const descMap = new Map();
+    for (const desc of data.descriptions) {
+      descMap.set(desc.classid + '_' + desc.instanceid, desc);
+    }
+
+    const items = [];
+    for (const asset of data.assets) {
+      const desc = descMap.get(asset.classid + '_' + asset.instanceid);
+      if (desc && desc.icon_url) {
+        // Filter out cases, grafitti, keys etc if possible, usually by checking tags
+        const isWeaponOrGloves = desc.tags?.some((t: any) => 
+          t.category === "Weapon" || t.category === "Type" && (t.internal_name === "CSGO_Type_Knife" || t.internal_name === "Type_Hands")
+        );
+        if (isWeaponOrGloves) {
+          // Extract rarity color
+          const rarityTag = desc.tags?.find((t: any) => t.category === "Rarity");
+          const color = rarityTag?.color ? `#${rarityTag.color}` : "#ffffff";
+          
+          let mappedStickers: { name: string, imageUrl: string }[] = [];
+          if (desc.descriptions) {
+            const stickerDesc = desc.descriptions.find((d: any) => d.value && d.value.includes("Sticker:"));
+            if (stickerDesc) {
+              const imgRegex = /<img[^>]+src="([^">]+)"/g;
+              let match;
+              while ((match = imgRegex.exec(stickerDesc.value)) !== null) {
+                mappedStickers.push({ imageUrl: match[1], name: "Sticker" });
+              }
+            }
+          }
+          
+          let nametag;
+          if (desc.fraudwarnings) {
+            const ntWarn = desc.fraudwarnings.find((fw: string) => fw.startsWith("Name Tag:"));
+            if (ntWarn) {
+              const matches = ntWarn.match(/Name Tag: ''(.+)''/);
+              if (matches) nametag = matches[1];
+            }
+          }
+          
+          items.push({
+            id: asset.assetid,
+            name: desc.market_hash_name,
+            imageUrl: `https://community.cloudflare.steamstatic.com/economy/image/${desc.icon_url}`,
+            color: color,
+            type: desc.type,
+            mappedStickers,
+            nametag
+          });
+        }
+      }
+    }
+
+    return { items, error: null };
+  } catch (error) {
+    return { items: [], error: "fetch_failed" };
   }
 }

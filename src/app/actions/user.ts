@@ -51,3 +51,16 @@ export async function updateProfile(data: {
     return { error: "An unexpected error occurred while updating the profile." };
   }
 }
+
+export async function revalidateProfile(steamId64: string) {
+  try {
+    const { revalidateTag, revalidatePath } = await import("next/cache");
+    revalidateTag(`inventory-${steamId64}`, "max");
+    revalidateTag(`faceit-${steamId64}`, "max");
+    revalidatePath(`/player/${steamId64}`);
+    return { success: true };
+  } catch (error) {
+    console.error("Error revalidating profile:", error);
+    return { error: "Failed to refresh profile data." };
+  }
+}

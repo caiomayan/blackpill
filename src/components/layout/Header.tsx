@@ -8,6 +8,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { IconBrandSteam, IconUsers, IconShield } from "@tabler/icons-react";
 import { Button } from "@/components/ui/button";
 import { sanitizeReturnTo } from "@/lib/return-to";
+import { HeaderSearch } from "@/components/search-command";
 
 type HeaderUser = {
   steamId64: string;
@@ -75,33 +76,42 @@ export function Header({ currentUser }: HeaderProps) {
         <ul className="flex items-center gap-10 pointer-events-auto">
           <li>
             <Link
-              href="/about"
-              className={`text-[11px] font-extrabold tracking-[0.2em] uppercase transition-all hover:text-black ${pathname === "/about" ? "text-black" : "text-neutral-400"}`}
-            >
-              About
-            </Link>
-          </li>
-          <li>
-            <Link
-              href="/servers"
-              className={`text-[11px] font-extrabold tracking-[0.2em] uppercase transition-all hover:text-black ${pathname === "/servers" ? "text-black" : "text-neutral-400"}`}
-            >
-              Servers
-            </Link>
-          </li>
-          <li>
-            <Link
               href="/ranking"
               className={`text-[11px] font-extrabold tracking-[0.2em] uppercase transition-all hover:text-black ${pathname === "/ranking" ? "text-black" : "text-neutral-400"}`}
             >
               Ranking
             </Link>
           </li>
+          <li>
+            <Link
+              href="/search/players"
+              className={`text-[11px] font-extrabold tracking-[0.2em] uppercase transition-all hover:text-black ${pathname.startsWith("/search/players") || pathname.startsWith("/player") ? "text-black" : "text-neutral-400"}`}
+            >
+              Players
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/search/teams"
+              className={`text-[11px] font-extrabold tracking-[0.2em] uppercase transition-all hover:text-black ${pathname.startsWith("/search/teams") || pathname.startsWith("/teams") ? "text-black" : "text-neutral-400"}`}
+            >
+              Teams
+            </Link>
+          </li>
+          <li>
+            <Link
+              href="/about"
+              className={`text-[11px] font-extrabold tracking-[0.2em] uppercase transition-all hover:text-black ${pathname === "/about" ? "text-black" : "text-neutral-400"}`}
+            >
+              About
+            </Link>
+          </li>
         </ul>
       </nav>
 
       {/* Right: User Menu */}
-      <div className="z-10 relative">
+      <div className="z-10 flex items-center gap-4 relative">
+        <HeaderSearch />
         {currentUser ? (
           <div ref={menuRef} className="relative">
             <button

@@ -26,7 +26,7 @@ export function TeamForm() {
       const res = await createTeam(formData);
       if (res.error) {
         setError(res.error);
-      } else if (res.success && res.teamId) {
+      } else if (res.success && res.team) {
         // Redirecionar para a página do time no futuro (ex: /teams/[id])
         // Por enquanto, redireciona de volta para a lista de times ou dashboard
         router.push("/teams");

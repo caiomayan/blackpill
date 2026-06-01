@@ -4,8 +4,8 @@ import { IconBrandGithub } from "@tabler/icons-react";
 
 export default function About() {
   return (
-    <main className="fixed inset-0 z-0 flex items-center justify-center px-6 text-center bg-neutral-50/30">
-      <div className="flex w-full max-w-3xl flex-col items-center gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <main className="flex-grow w-full max-w-3xl mx-auto px-6 py-12 md:py-24 text-center flex flex-col items-center justify-center min-h-[calc(100vh-140px)] pb-24">
+      <div className="flex w-full flex-col items-center gap-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         
         {/* Logo */}
         <div className="relative h-48 w-48 hover:scale-105 transition-transform duration-500">
